@@ -102,6 +102,33 @@ def setup(conn):
     );
     """)
 
+    # Triggers
+    cur.execute("""
+    CREATE TRIGGER performers_on_delete AFTER DELETE on rolas
+    WHEN NOT EXISTS(SELECT 1 from rolas WHERE id_performer = OLD.id_performer)
+    BEGIN
+    DELETE from performers WHERE id_performer = OLD.id_performer;
+    END;""")
+    cur.execute("""
+    CREATE TRIGGER performers_on_update AFTER UPDATE of id_performer on rolas
+    WHEN NOT EXISTS(SELECT 1 from rolas WHERE id_performer = OLD.id_performer)
+    BEGIN
+    DELETE from performers WHERE id_performer = OLD.id_performer;
+    END;""")
+
+    cur.execute("""
+    CREATE TRIGGER albums_on_delete AFTER DELETE on rolas
+    WHEN NOT EXISTS(SELECT 1 from rolas WHERE id_album = OLD.id_album)
+    BEGIN
+    DELETE from albums WHERE id_album = OLD.id_album;
+    END;""")
+    cur.execute("""
+    CREATE TRIGGER albums_on_update AFTER UPDATE of id_album on rolas
+    WHEN NOT EXISTS(SELECT 1 from rolas WHERE id_album = OLD.id_album)
+    BEGIN
+    DELETE from albums WHERE id_album = OLD.id_album;
+    END;""")
+
     conn.commit()
     return conn
 
