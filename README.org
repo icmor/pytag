@@ -21,7 +21,7 @@ python -m venv --system-site-packages .env
 #+end_src
 and then just install the remaining packages.
 ** Plan
-- [ ] Create and setup database
+- [X] Create and setup database
 - [ ] Method for adding songs to the database (handle duplicates)
 - [ ] Triggers for deletion of albums/performers
 - [ ] Basic Gtk.TreeView, get list from db
