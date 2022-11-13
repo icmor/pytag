@@ -1,7 +1,9 @@
 from gi.repository import GLib
+import datetime as dt
 import sqlite3
 import pathlib
 import logging
+import mutagen
 
 
 def connect():
@@ -102,6 +104,102 @@ def setup(conn):
 
     conn.commit()
     return conn
+
+
+def add_performer(conn, cur, performer):
+    """ Adds a performer to table performers, and returns
+    its primary key. If performer already exists it only returns the
+    primary key. Expects a sqlite3.Connection, sqlite3.Cursor and a
+    list with the name of the performer as its only element.
+    Returns a list with the primary key as its only element.
+    """
+    id_performer = cur.execute(
+        "SELECT id_performer from performers WHERE name = ?;",
+        performer).fetchone()
+    if not id_performer:
+        cur.execute(
+            "INSERT into performers(id_type, name) VALUES(2, ?)",
+            performer)
+        conn.commit()
+        id_performer = cur.execute(
+            "SELECT id_performer from performers WHERE name = ?;",
+            performer).fetchone()
+    return list(id_performer)
+
+
+def add_album(conn, cur, album, year):
+    """ Adds an album to albums table, and returns
+    its primary key. If album already exists it only returns the
+    primary key. Expects a sqlite3.Connection, sqlite3.Cursor and a
+    list with the name of the album and another list with its year.
+    Returns a list with the primary key as its only element.
+    """
+    id_album = cur.execute(
+        "SELECT id_album from albums WHERE"
+        "(name = ?) AND (year = ?);",
+        album + year).fetchone()
+    if not id_album:
+        cur.execute(
+            "INSERT into albums(name, year) VALUES(?, ?)",
+            album + year)
+        conn.commit()
+        id_album = cur.execute(
+            "SELECT id_album from albums WHERE"
+            "(name = ?) AND (year = ?);",
+            album + year).fetchone()
+    return list(id_album)
+
+
+def add_song(conn, cur, file):
+    """ Adds a song to the database, any tag that is empty will have
+    the corresponding column assigned to "Unknown" or 0 in the case of
+    track number. Expects a sqlite3.Connection, sqlite3.Cursor and
+    a valid audio file.
+    """
+    song = mutagen.easyid3.EasyID3(file)
+    path = [str(file)]
+    title = info if (info := song.get("title")) is not None else ["Unknown"]
+    genre = info if (info := song.get("genre")) is not None else ["Unknown"]
+    track = ([int(info[0])] if (info := song.get("tracknumber")) is not None
+             else [0])
+    year = ([int(info[0])] if (info := song.get("date")) is not None
+            else [dt.date.today().year])
+
+    if (performer := song.get("artist")) is not None:
+        id_performer = add_performer(conn, cur, performer)
+    else:
+        performer = ["Unknown"]
+        id_performer = [None]
+
+    if (album := song.get("album")) is not None:
+        id_album = add_album(conn, cur, album, year)
+    else:
+        album = ["Unknown"]
+        id_album = [None]
+
+    if not cur.execute("SELECT 1 from rolas WHERE path = ?;", path).fetchone():
+        cur.execute("""
+        INSERT into rolas(
+        id_performer,
+        id_album,
+        path,
+        title,
+        track,
+        year,
+        genre
+        ) VALUES(?, ?, ?, ?, ?, ?, ?)
+        """, id_performer + id_album + path + title + track + year + genre)
+        conn.commit()
+
+
+def add_songs(conn, files=pathlib.Path.home().joinpath("Music").rglob("*")):
+    """  Add songs to the database by calling add_song on each valid file.
+    Expects a sqlite3.Connection object and a list of pathlib.Path objects.
+    """
+    cur = conn.cursor()
+    for file in files:
+        if file.is_file() and mutagen.File(file) is not None:
+            add_song(conn, cur, file)
 
 
 if __name__ == '__main__':
