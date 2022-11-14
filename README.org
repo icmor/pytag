@@ -4,6 +4,10 @@ A simple mp3 tag editor written in python
 - Python 3
 - PyGObject
 - mutagen (mp3 tag management)
+** Run
+#+begin_src bash
+python main.py
+#+end_src
 ** Installation
 Install	the required packages with pip:
 #+begin_src bash
@@ -23,7 +27,7 @@ and then just install the remaining packages.
 ** Plan
 - [X] Create and setup database
 - [X] Method for adding songs to the database (handle duplicates)
-- [ ] Triggers for deletion of albums/performers
-- [ ] Basic Gtk.TreeView, get list from db
-- [ ] CellRendererText callback for db edits
+- [X] Triggers for deletion of albums/performers
+- [X] Basic Gtk.TreeView, get list from db
+- [X] CellRendererText callback for db edits
 - [ ] Define language for filtering ("searching")

@@ -1,11 +1,15 @@
 from enums import LRow
 import database
 import gi
+import re
 import json
 
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk
 from gi.repository import Gdk
+
+
+valid_track = re.compile("[0-9]+|[0-9]+/[0-9]+")
 
 
 class PytagWindow(Gtk.Window):
@@ -39,6 +43,10 @@ class PytagWindow(Gtk.Window):
                 [LRow.title, LRow.performer, LRow.album, LRow.track, LRow.year]
         ):
             renderer = Gtk.CellRendererText(editable=True)
+            # https://docs.python-guide.org/writing/gotchas/
+            # late-binding-closures
+            renderer.connect("edited",
+                             lambda *args, col=idx: self.on_edit(col, *args))
             column = Gtk.TreeViewColumn(title, renderer, text=idx)
             column.set_resizable(True)
             column.set_sort_column_id(idx)
@@ -53,6 +61,9 @@ class PytagWindow(Gtk.Window):
 
         renderer = Gtk.CellRendererCombo(model=genre_model, editable=True,
                                          text_column=0)
+        renderer.connect("edited",
+                         lambda *args, col=LRow.genre:
+                         self.on_edit(col, *args))
         column = Gtk.TreeViewColumn("Genre", renderer, text=LRow.genre)
         column.set_sort_column_id(LRow.genre)
         self.view.append_column(column)
@@ -76,6 +87,21 @@ class PytagWindow(Gtk.Window):
                 database.delete_rola(self.conn.cursor(),
                                      self.liststore[treeiter][LRow.id_rola])
                 self.liststore.remove(treeiter)
+
+    def on_edit(self, column, renderer, path, text):
+        treeiter = self.sort_iter_to_list_iter(self.sort.get_iter(path))
+        row = self.liststore[treeiter]
+        if text == row[column]:
+            return
+        if column == LRow.year and not text.isdigit():
+            return
+        if column == LRow.track and not valid_track.fullmatch(text):
+            return
+        database.update_field(self.conn.cursor(), row[LRow.id_rola],
+                              column, text)
+        database.update_tags(self.conn.cursor(), row[LRow.id_rola],
+                             column)
+        row[column] = text if not column == LRow.year else int(text)
 
     def filter_func(self, model, treeiter, data):
         if self.current_filter is None:

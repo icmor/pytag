@@ -254,6 +254,25 @@ def delete_rola(cur, id_rola):
     cur.connection.commit()
 
 
+def update_field(cur, id_rola, column, value):
+    """ Updates column in row based on id_rola.
+    Expects a sqlite3.Cursor and the new value.
+    """
+    if column == LRow.performer:
+        column = "id_performer"
+        value = add_performer(cur, (value,))[0]
+    elif column == LRow.album:
+        column = "id_album"
+        year = cur.execute("SELECT year from rolas where id_rola = ?;",
+                           (id_rola,)).fetchone()
+        value = add_album(cur, (value,), year)[0]
+    else:
+        column = LRow(column).name
+    query = "UPDATE rolas SET " + column + " = ? WHERE id_rola = ?;"
+    cur.execute(query, (value, id_rola))
+    cur.connection.commit()
+
+
 def get_performer_album(cur, row):
     performer = cur.execute(
         "SELECT name from performers WHERE id_performer = ?",
@@ -261,6 +280,31 @@ def get_performer_album(cur, row):
     album = cur.execute("SELECT name from albums WHERE id_album = ?",
                         (row[DRow.id_album],)).fetchone()[0]
     return performer, album
+
+
+def update_tags(cur, id_rola, column):
+    """ Updates a file's tags based on the corresponding
+    column and row in rolas. Expects a sqlite3.Cursor, id_rola and
+    column number.
+    """
+    row = cur.execute("SELECT * from rolas WHERE id_rola = ?",
+                      (id_rola,)).fetchone()
+    song = mutagen.easyid3.EasyID3(pathlib.Path(row[DRow.path]))
+    if column == LRow.title:
+        song['title'] = row[DRow.title]
+    elif column == LRow.track:
+        song['tracknumber'] = row[DRow.track]
+    elif column == LRow.year:
+        song['date'] = str(row[DRow.year])
+    elif column == LRow.genre:
+        song['genre'] = row[DRow.genre]
+    else:
+        performer, album = get_performer_album(cur, row)
+        if column == LRow.performer:
+            song['artist'] = performer
+        elif column == LRow.album:
+            song['album'] = album
+    song.save()
 
 
 if __name__ == '__main__':
