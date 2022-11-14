@@ -247,6 +247,13 @@ def rola_to_list(cur, drow):
     return lrow
 
 
+def delete_rola(cur, id_rola):
+    """ Deletes a row from rolas based on id_rola.
+    """
+    cur.execute("DELETE from rolas WHERE id_rola = ?;", (id_rola,))
+    cur.connection.commit()
+
+
 def get_performer_album(cur, row):
     performer = cur.execute(
         "SELECT name from performers WHERE id_performer = ?",

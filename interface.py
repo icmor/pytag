@@ -32,6 +32,7 @@ class PytagWindow(Gtk.Window):
 
         self.sort = Gtk.TreeModelSort(model=self.filter)
         self.view = Gtk.TreeView(model=self.sort)
+        self.view.connect("key-release-event", self.on_key_release)
 
         for title, idx in zip(
                 ["Title", "Artist/Band", "Album", "Track", "Year"],
@@ -63,6 +64,18 @@ class PytagWindow(Gtk.Window):
 
         self.show_all()
 
+    def sort_iter_to_list_iter(self, sort_iter):
+        filter_iter = self.sort.convert_iter_to_child_iter(sort_iter)
+        return self.filter.convert_iter_to_child_iter(filter_iter)
+
+    def on_key_release(self, view, key):
+        if key.keyval == Gdk.KEY_Delete:
+            model, treeiter = view.get_selection().get_selected()
+            if treeiter is not None:
+                treeiter = self.sort_iter_to_list_iter(treeiter)
+                database.delete_rola(self.conn.cursor(),
+                                     self.liststore[treeiter][LRow.id_rola])
+                self.liststore.remove(treeiter)
 
     def filter_func(self, model, treeiter, data):
         if self.current_filter is None:
