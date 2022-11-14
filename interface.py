@@ -1,9 +1,11 @@
 from enums import LRow
 import database
 import gi
+import json
 
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk
+from gi.repository import Gdk
 
 
 class PytagWindow(Gtk.Window):
@@ -32,15 +34,27 @@ class PytagWindow(Gtk.Window):
         self.view = Gtk.TreeView(model=self.sort)
 
         for title, idx in zip(
-                ["Title", "Artist/Band", "Album", "Track", "Year", "Genre"],
-                [LRow.title, LRow.performer, LRow.album, LRow.track,
-                 LRow.year, LRow.genre]
+                ["Title", "Artist/Band", "Album", "Track", "Year"],
+                [LRow.title, LRow.performer, LRow.album, LRow.track, LRow.year]
         ):
             renderer = Gtk.CellRendererText(editable=True)
             column = Gtk.TreeViewColumn(title, renderer, text=idx)
             column.set_resizable(True)
             column.set_sort_column_id(idx)
             self.view.append_column(column)
+
+        # genres.json was retrieved with mid3v2 -L (included with mutagen)
+        with open("genres.json") as f:
+            genre_list = json.load(f)
+        genre_model = Gtk.ListStore(str)
+        for genre in genre_list:
+            genre_model.append([genre])
+
+        renderer = Gtk.CellRendererCombo(model=genre_model, editable=True,
+                                         text_column=0)
+        column = Gtk.TreeViewColumn("Genre", renderer, text=LRow.genre)
+        column.set_sort_column_id(LRow.genre)
+        self.view.append_column(column)
 
         self.scrollable_treelist = Gtk.ScrolledWindow()
         self.scrollable_treelist.set_vexpand(True)
