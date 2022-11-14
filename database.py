@@ -1,4 +1,5 @@
 from gi.repository import GLib
+from enums import DRow, LRow
 import datetime as dt
 import mutagen.easyid3
 import mutagen
@@ -225,6 +226,34 @@ def add_songs(cur, files=pathlib.Path.home().joinpath("Music").rglob("*")):
     for file in files:
         if file.is_file() and mutagen.File(file) is not None:
             add_song(cur, file)
+
+
+def rola_to_list(cur, drow):
+    """ Takes a sqlite3.Cursor and a tuple representing a row in table
+    rolas. Returns a list representing a row for the liststore model
+    (id_rola, id_performer, id_album, path, title, track, year, genre)
+    -> [id_rola, title, performer, album, track, year, genre]
+    """
+    lrow = []
+    lrow.insert(LRow.id_rola, drow[DRow.id_rola])
+    lrow.insert(LRow.title, drow[DRow.title])
+    lrow.insert(LRow.track, drow[DRow.track])
+    lrow.insert(LRow.year, drow[DRow.year])
+    lrow.insert(LRow.genre, drow[DRow.genre])
+
+    performer, album = get_performer_album(cur, drow)
+    lrow.insert(LRow.performer, performer)
+    lrow.insert(LRow.album, album)
+    return lrow
+
+
+def get_performer_album(cur, row):
+    performer = cur.execute(
+        "SELECT name from performers WHERE id_performer = ?",
+        (row[DRow.id_performer],)).fetchone()[0]
+    album = cur.execute("SELECT name from albums WHERE id_album = ?",
+                        (row[DRow.id_album],)).fetchone()[0]
+    return performer, album
 
 
 if __name__ == '__main__':
