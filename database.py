@@ -86,7 +86,7 @@ def setup(cur):
     id_album 		INTEGER,
     path		TEXT,
     title		TEXT,
-    track		INTEGER,
+    track		TEXT,
     year		INTEGER,
     genre		TEXT,
     FOREIGN KEY         (id_performer) REFERENCES performers(id_performer),
@@ -186,8 +186,8 @@ def add_song(cur, file):
     path = [str(file)]
     title = info if (info := song.get("title")) is not None else ["Unknown"]
     genre = info if (info := song.get("genre")) is not None else ["Unknown"]
-    track = ([int(info[0])] if (info := song.get("tracknumber")) is not None
-             else [0])
+    track = (info if (info := song.get("tracknumber")) is not None
+             else ['0'])
     year = ([int(info[0])] if (info := song.get("date")) is not None
             else [dt.date.today().year])
 
