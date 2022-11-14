@@ -24,10 +24,14 @@ If you want to run the program in a virtual environment but use the system-wide 
 python -m venv --system-site-packages .env
 #+end_src
 and then just install the remaining packages.
+** Filtering
+JSON! Just write a JSON dictionary, any keys you add act like conditions and you can add multiple values for a single key with a list. Valid keys are: "album", "genre", "performer", "title", "track", "year". Example:
+Song with title "Power" by either "Molotov" or "Kanye West"
+{"title": "Power", "performer": ["Molotov", "Kanye West"]}
 ** Plan
 - [X] Create and setup database
 - [X] Method for adding songs to the database (handle duplicates)
 - [X] Triggers for deletion of albums/performers
 - [X] Basic Gtk.TreeView, get list from db
 - [X] CellRendererText callback for db edits
-- [ ] Define language for filtering ("searching")
+- [X] Define language for filtering ("searching")

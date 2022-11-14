@@ -73,6 +73,11 @@ class PytagWindow(Gtk.Window):
         self.grid.attach(self.scrollable_treelist, 0, 0, 8, 10)
         self.scrollable_treelist.add(self.view)
 
+        self.filter_entry = Gtk.Entry()
+        self.filter_entry.set_vexpand(True)
+        self.filter_entry.connect("activate", self.set_filter)
+        self.grid.attach(self.filter_entry, 0, 11, 8, 1)
+
         self.show_all()
 
     def sort_iter_to_list_iter(self, sort_iter):
@@ -106,6 +111,40 @@ class PytagWindow(Gtk.Window):
     def filter_func(self, model, treeiter, data):
         if self.current_filter is None:
             return True
+        else:
+            return self.current_filter(model[treeiter])
+
+    def set_filter(self, entry):
+        if entry.get_text() == "":
+            self.current_filter = None
+        else:
+            obj = None
+            try:
+                obj = json.loads(entry.get_text())
+            except json.JSONDecodeError:
+                entry.set_text("")
+                return
+            print("Got obj", obj)
+            if not isinstance(obj, dict) or any(k not in
+                                                ["album", "genre", "performer",
+                                                 "title", "track", "year"]
+                                                for k in obj):
+                entry.set_text("")
+                return
+            self.current_filter = self.create_filter(obj)
+        self.filter.refilter()
+
+    def create_filter(self, d):
+        def inner(row):
+            for k, v in d.items():
+                if isinstance(v, list):
+                    if row[LRow[k]] not in v:
+                        return False
+                else:
+                    if row[LRow[k]] != v:
+                        return False
+            return True
+        return inner
 
 
 def start():
